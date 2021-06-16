@@ -62,6 +62,12 @@ namespace WorkItemImport
             }
         }
 
+        private static List<string> MatchResolvedStatus = new List<string>
+        {
+            "UAT Passed",
+            "Deployed to Production"
+        };
+
         private Agent(MigrationContext context, Settings settings, VsWebApi.VssConnection restConn, TfsTeamProjectCollection soapConnection)
         {
             _context = context;
@@ -815,6 +821,21 @@ namespace WorkItemImport
             }
         }
 
+        private void CorrectResolvedInfo(WiRevision rev, WorkItem wi)
+        {
+            if (rev.Index != 0 && rev.Fields.HasAnyByRefName(WiFieldReference.State))
+            {
+                var wiState = wi.Fields[WiFieldReference.State]?.Value?.ToString() ?? string.Empty;
+                var revState = rev.Fields.GetFieldValueOrDefault<string>(WiFieldReference.State) ?? string.Empty;
+                if (MatchResolvedStatus.Any(m => wiState.Equals(m, StringComparison.InvariantCultureIgnoreCase)) ||
+                    MatchResolvedStatus.Any(m => revState.Equals(m, StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    rev.Fields.Add(new WiField() { ReferenceName = WiFieldReference.ResolvedBy, Value = rev.Author });
+                    rev.Fields.Add(new WiField() { ReferenceName = WiFieldReference.ResolvedDate, Value = rev.Time });
+                }
+            }
+        }
+
         private bool CorrectDescription(WorkItem wi, WiItem wiItem, WiRevision rev)
         {
             string description = wi.Type.Name == "Bug" ? wi.Fields[WiFieldReference.ReproSteps].Value.ToString() : wi.Description;
@@ -894,6 +915,7 @@ namespace WorkItemImport
                 EnsureAuthorFields(rev);
                 EnsureAssigneeField(rev, wi);
                 EnsureFieldsOnStateChange(rev, wi);
+                CorrectResolvedInfo(rev, wi);
 
                 var attachmentMap = new Dictionary<string, Attachment>();
                 if (rev.Attachments.Any() && !ApplyAttachments(rev, wi, attachmentMap))

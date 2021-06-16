@@ -29,5 +29,9 @@
         public static string ActivatedBy => "Microsoft.VSTS.Common.ActivatedBy";
         public static string Tags => "System.Tags";
 
+        // More fields mapping can be found here: https://docs.microsoft.com/en-us/azure/devops/reference/xml/reportable-fields-reference?view=azure-devops-2020
+        public static string ResolvedBy => "Microsoft.VSTS.Common.ResolvedBy";
+        public static string ResolvedDate => "Microsoft.VSTS.Common.ResolvedDate";
+
     }
 }
